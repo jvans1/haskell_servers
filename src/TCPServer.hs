@@ -1,15 +1,18 @@
 module TCPServer where
 import Network.Socket
+import Data.Map.Strict(Map)
+type DataStore = Map String String
 
-tcpServerLoop :: PortNumber -> (Socket -> IO ()) -> IO ()
-tcpServerLoop port requestHandler = do
+tcpServerLoop :: PortNumber -> DataStore -> (Socket -> DataStore -> IO DataStore) -> IO ()
+tcpServerLoop port storage requestHandler = do
   s <- socket AF_INET Stream defaultProtocol
   bind s (SockAddrInet port 0) >> listen s 5
-  loop s requestHandler
+  loop s storage requestHandler 
+  return ()
 
 
-loop :: Socket -> (Socket -> IO ()) -> IO ()
-loop socket requestHandler = do
+loop :: Socket -> Map String String -> (Socket -> DataStore -> IO DataStore) -> IO DataStore
+loop socket storage requestHandler = do
   (connection, a) <- accept socket
-  requestHandler connection
-  loop socket requestHandler
+  newStorage <- requestHandler connection storage
+  loop socket newStorage requestHandler
