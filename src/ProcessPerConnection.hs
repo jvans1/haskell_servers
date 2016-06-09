@@ -1,5 +1,7 @@
 import Network.Socket
-import System.Posix.Process(forkProcess)
+import System.Posix.Process(forkProcess, getProcessStatus)
+import System.Posix.Types(ProcessID)
+import Control.Concurrent(threadDelay, forkIO)
 import Control.Monad(forever)
 
 main :: IO ()
@@ -9,10 +11,25 @@ main = do
   handleRequest s
   close s
 
-{- handleRequest :: Socket ->  -}
+handleRequest :: Socket -> IO ()
 handleRequest listeningSocket = do
     (connection, _) <- accept listeningSocket
-    forkProcess $ do
-      send connection "HELLO WORLD!"
+    pid <- forkProcess $ do
+      putStrLn "Process new Request"
+      send connection "Hi, sleeping for 5 seconds...\n\nt"
+      threadDelay 5000000
+      send connection "Done Sleeping\n\n"
       close connection
+
+    close connection
+    detachProcess pid
     handleRequest listeningSocket
+
+
+detachProcess :: ProcessID -> IO ()
+detachProcess pid = do
+                    forkIO $ do
+                      getProcessStatus True True pid
+                      return ()
+                    return ()
+
