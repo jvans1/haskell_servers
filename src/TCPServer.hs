@@ -1,5 +1,7 @@
 module TCPServer where
 import Network.Socket
+import System.Exit(exitSuccess)
+import System.Posix.Signals(installHandler, Handler(..), sigINT)
 import Data.Map.Strict(Map)
 type DataStore = Map String String
 
@@ -7,7 +9,9 @@ tcpServerLoop :: PortNumber -> DataStore -> (Socket -> DataStore -> IO DataStore
 tcpServerLoop port storage requestHandler = do
   s <- socket AF_INET Stream defaultProtocol
   bind s (SockAddrInet port 0) >> listen s 5
-  loop s storage requestHandler 
+  setSocketOption s ReuseAddr 1
+  installHandler sigINT (Catch (close s >> exitSuccess)) Nothing
+  loop s storage requestHandler
   return ()
 
 

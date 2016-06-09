@@ -12,7 +12,7 @@ main =
     erequest <- naiveHttpRequestParser <$> recv connection 4096
     newStorage <- case erequest of
       Right (Request GET _ path _) -> do
-       send connection $ maybe ("No Value stored at: " ++ path) ((++) "Retrieved Value: ") (lookup path storage)
+       send connection (runQuery path storage)
        return storage
       Right (Request POST body _ _) -> do
        let newStore = storeParams storage body
@@ -26,3 +26,9 @@ main =
 storeParams ::Map String String -> [(String, String)] ->  Map String String
 storeParams  = foldr (\(key, val) storage -> insert key val storage) 
 
+
+runQuery :: String -> Map String String -> String
+runQuery path storage =
+  case lookup path storage of
+    Just value -> "Retrieved Value: " ++ value
+    Nothing ->  "No Value stored at: " ++ path
