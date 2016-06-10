@@ -26,7 +26,6 @@ main =
 storeParams ::Map String String -> [(String, String)] ->  Map String String
 storeParams  = foldr (\(key, val) storage -> insert key val storage) 
 
-
 runQuery :: String -> Map String String -> String
 runQuery path storage =
   case lookup path storage of

@@ -23,7 +23,6 @@ main = do
 killChildren :: [ProcessID] -> IO ()
 killChildren = mapM_ (signalProcess sigKILL)
 
-
 monitorProcesses :: Socket -> IO ()
 monitorProcesses listeningSocket = do
   mpid <- getAnyProcessStatus True True
