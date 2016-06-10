@@ -1,8 +1,7 @@
 import Network.Socket
 import System.Posix.Process(forkProcess, getProcessStatus)
-import System.Posix.Types(ProcessID)
-import Control.Concurrent(threadDelay, forkIO)
-import Control.Monad(forever)
+import Control.Concurrent(threadDelay)
+import Concurrent(detachProcess)
 
 main :: IO ()
 main = do
@@ -25,11 +24,4 @@ handleRequest listeningSocket = do
     detachProcess pid
     handleRequest listeningSocket
 
-
-detachProcess :: ProcessID -> IO ()
-detachProcess pid = do
-                    forkIO $ do
-                      getProcessStatus True True pid
-                      return ()
-                    return ()
 
