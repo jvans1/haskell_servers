@@ -12,7 +12,7 @@ createDB :: IO Database
 createDB = Database <$> newMVar empty
 
 threadPoolSize :: Int
-threadPoolSize = 5
+threadPoolSize = 5000
 
 main :: IO ()
 main = do
@@ -27,7 +27,6 @@ runServer :: Database -> Int -> Socket -> IO ()
 runServer database num socket =
   forever $ do
     (connection, _) <- accept socket
-    putStrLn $ "Processing Connection on thread" ++ show num ++ "\n\n"
     erequest <- naiveHttpRequestParser <$> recv connection 4096
     case erequest of
       Right (Request GET _ path _) -> do
@@ -36,8 +35,7 @@ runServer database num socket =
       Right (Request POST body _ _) -> do
        newStore <- storeParams database body
        send connection ("" ++ show newStore)
-      Left  _ -> do
-       send connection "Invalid response"
+      Left  _ -> send connection "Invalid response"
     close connection
 
 runQuery :: String -> Database -> IO String

@@ -6,8 +6,6 @@ import System.Exit(exitSuccess)
 import Data.Maybe(Maybe(..))
 import System.Posix.Signals(installHandler, Handler(..), sigINT)
 import Control.Monad(forever, forM)
-import Concurrent(detachProcess)
-import TCPServer(setupSocket)
 
 processPoolSize :: Int
 processPoolSize = 5
@@ -18,26 +16,34 @@ main = do
   pids <- forM [1..processPoolSize] $ \num ->
     forkProcess (runServer num listeningSocket)
   installHandler sigINT (Catch (killChildren pids >> exitSuccess)) Nothing
-  monitorProcesses listeningSocket
+  monitorProcesses
 
 killChildren :: [ProcessID] -> IO ()
 killChildren = mapM_ (signalProcess sigKILL)
 
-monitorProcesses :: Socket -> IO ()
-monitorProcesses listeningSocket = do
+monitorProcesses :: IO ()
+monitorProcesses = do
   mpid <- getAnyProcessStatus True True
   case mpid of
       Just (pid, status) -> do
         putStrLn $ "Process" ++ show pid ++ " quit unexpectedly\n\n"
-        monitorProcesses listeningSocket
+        monitorProcesses
       Nothing -> do
         putStrLn "No processes have exited\n"
-        monitorProcesses listeningSocket
+        monitorProcesses
+
+setupSocket :: PortNumber -> IO Socket
+setupSocket port = do
+  s <- socket AF_INET Stream defaultProtocol
+  bind s (SockAddrInet port 0) >> listen s 5
+  setSocketOption s ReuseAddr 1
+  return s
 
 runServer :: Int -> Socket -> IO ()
 runServer num socket =
   forever $ do
     (connection, _) <- accept socket
-    putStrLn $ "Processing Connection on server" ++ show num ++ "\n\n"
-    send connection $ "Received Connection in process Number" ++ (show num)
+    msg <- recv connection 1024
+    send connection $ "Received Connection in process Number" ++ show num ++ "\n\n"
+    send connection $ "\n Echo..." ++ msg
     close connection
